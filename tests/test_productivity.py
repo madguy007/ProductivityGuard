@@ -3,6 +3,7 @@ import tempfile
 import unittest
 
 from database.db import initialize_database
+from database.db import execute_query
 from services.productivity import (
     change_balance,
     classify_domain,
@@ -39,6 +40,12 @@ class ProductivityRulesTest(unittest.TestCase):
         self.assertEqual(classify_domain("github.com"), "productive")
         self.assertEqual(classify_domain("www.youtube.com"), "timepass")
         self.assertEqual(classify_domain("example.com"), "neutral")
+
+    def test_deleted_default_rule_is_not_reseeded(self):
+        execute_query("DELETE FROM site_rules WHERE domain = ?", ("youtube.com",))
+        initialize_database()
+
+        self.assertEqual(classify_domain("youtube.com"), "neutral")
 
     def test_productive_time_earns_timepass_minutes(self):
         self.heartbeat("https://github.com", "2026-05-13T10:00:00")

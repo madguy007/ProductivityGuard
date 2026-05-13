@@ -92,17 +92,19 @@ def _seed_defaults(cursor):
             (key, value),
         )
 
-    for domain in DEFAULT_PRODUCTIVE_SITES:
-        cursor.execute(
-            "INSERT OR IGNORE INTO site_rules (domain, category) VALUES (?, 'productive')",
-            (domain,),
-        )
+    cursor.execute("SELECT COUNT(*) AS total FROM site_rules")
+    if cursor.fetchone()["total"] == 0:
+        for domain in DEFAULT_PRODUCTIVE_SITES:
+            cursor.execute(
+                "INSERT INTO site_rules (domain, category) VALUES (?, 'productive')",
+                (domain,),
+            )
 
-    for domain in DEFAULT_TIMEPASS_SITES:
-        cursor.execute(
-            "INSERT OR IGNORE INTO site_rules (domain, category) VALUES (?, 'timepass')",
-            (domain,),
-        )
+        for domain in DEFAULT_TIMEPASS_SITES:
+            cursor.execute(
+                "INSERT INTO site_rules (domain, category) VALUES (?, 'timepass')",
+                (domain,),
+            )
 
 
 def initialize_database():
