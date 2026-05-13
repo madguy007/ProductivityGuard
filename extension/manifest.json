@@ -1,0 +1,20 @@
+{
+  "manifest_version": 3,
+  "name": "ProductivityGuard",
+  "description": "Tracks productive browser time and blocks distracting sites when timepass minutes run out.",
+  "version": "1.0.0",
+  "permissions": ["tabs", "idle", "storage", "alarms"],
+  "host_permissions": ["<all_urls>", "http://127.0.0.1:5000/*"],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_title": "ProductivityGuard"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["blocked.html"],
+      "matches": ["<all_urls>"]
+    }
+  ]
+}

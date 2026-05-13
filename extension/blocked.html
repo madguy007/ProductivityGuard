@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Blocked by ProductivityGuard</title>
+    <style>
+      :root {
+        --bg: #f5f7fb;
+        --panel: #ffffff;
+        --text: #172033;
+        --muted: #667085;
+        --line: #d9e0ea;
+        --primary: #1f7a5b;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        display: grid;
+        min-height: 100vh;
+        margin: 0;
+        place-items: center;
+        background: var(--bg);
+        color: var(--text);
+        font-family: Arial, Helvetica, sans-serif;
+      }
+
+      main {
+        width: min(560px, calc(100% - 32px));
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 28px;
+        background: var(--panel);
+      }
+
+      h1,
+      p {
+        margin: 0;
+      }
+
+      h1 {
+        margin-bottom: 12px;
+        font-size: 28px;
+      }
+
+      p {
+        color: var(--muted);
+        line-height: 1.5;
+      }
+
+      .balance {
+        margin: 22px 0;
+        color: var(--primary);
+        font-size: 42px;
+        font-weight: 700;
+      }
+
+      a {
+        color: var(--text);
+        font-weight: 700;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Timepass is locked</h1>
+      <p><strong id="site">This site</strong> is on your timepass list, and your available timepass balance is empty.</p>
+      <div class="balance"><span id="balance">0</span> min</div>
+      <p>Spend time on productive sites to earn access again. Your dashboard is at <a href="http://127.0.0.1:5000">127.0.0.1:5000</a>.</p>
+    </main>
+    <script src="blocked.js"></script>
+  </body>
+</html>

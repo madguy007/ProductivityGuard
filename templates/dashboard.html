@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>ProductivityGuard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+  </head>
+  <body>
+    <main class="shell">
+      <header class="topbar">
+        <div>
+          <h1>ProductivityGuard</h1>
+          <p id="active-site">Waiting for browser activity</p>
+        </div>
+        <div class="balance">
+          <span id="balance">0.0</span>
+          <small>timepass min</small>
+        </div>
+      </header>
+
+      <section class="metrics" aria-label="Today's totals">
+        <article>
+          <span id="productive">0.0</span>
+          <small>productive min</small>
+        </article>
+        <article>
+          <span id="timepass">0.0</span>
+          <small>timepass min</small>
+        </article>
+        <article>
+          <span id="neutral">0.0</span>
+          <small>neutral min</small>
+        </article>
+      </section>
+
+      <section class="grid">
+        <div class="panel">
+          <div class="panel-head">
+            <h2>Productive Sites</h2>
+            <form class="rule-form" data-category="productive">
+              <input type="text" name="domain" placeholder="example.com" autocomplete="off">
+              <button type="submit">Add</button>
+            </form>
+          </div>
+          <ul id="productive-rules" class="rules"></ul>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <h2>Timepass Sites</h2>
+            <form class="rule-form" data-category="timepass">
+              <input type="text" name="domain" placeholder="example.com" autocomplete="off">
+              <button type="submit">Add</button>
+            </form>
+          </div>
+          <ul id="timepass-rules" class="rules"></ul>
+        </div>
+      </section>
+
+      <section class="panel settings-panel">
+        <div>
+          <h2>Reward Settings</h2>
+          <p>Changes apply to new tracked time.</p>
+        </div>
+        <form id="settings-form" class="settings">
+          <label>
+            <span>Productive minutes per timepass minute</span>
+            <input type="number" min="1" name="earn_ratio_productive_minutes">
+          </label>
+          <label>
+            <span>Daily bonus goal minutes</span>
+            <input type="number" min="1" name="daily_bonus_goal_minutes">
+          </label>
+          <label>
+            <span>Daily bonus minutes</span>
+            <input type="number" min="1" name="daily_bonus_minutes">
+          </label>
+          <label>
+            <span>Carryover cap minutes</span>
+            <input type="number" min="1" name="carryover_cap_minutes">
+          </label>
+          <button type="submit">Save settings</button>
+        </form>
+      </section>
+    </main>
+
+    <script src="{{ url_for('static', filename='dashboard.js') }}"></script>
+  </body>
+</html>
