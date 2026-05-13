@@ -2,6 +2,11 @@
 
 ProductivityGuard is a personal browser productivity tracker. It runs a local Flask dashboard/API and a Chrome/Brave extension. Productive sites earn timepass minutes, timepass sites consume them, and distracting sites are blocked when the balance reaches zero.
 
+## Dashboard
+
+![ProductivityGuard dashboard](docs/images/dashboard.png)
+
+
 ## Run the Local App
 
 ```powershell
@@ -24,6 +29,8 @@ http://127.0.0.1:5000
 5. Select the `extension` folder from this project.
 
 Keep `python main.py` running while you browse. The extension sends active-tab heartbeats to the local app.
+
+
 
 ## Reward Rules
 
