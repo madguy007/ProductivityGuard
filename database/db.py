@@ -38,6 +38,17 @@ DEFAULT_SETTINGS = {
     "heartbeat_interval_seconds": "15",
 }
 
+DEFAULT_TASKS = [
+    "Sleep for 7 hrs",
+    "Workout",
+    "5hr of study",
+    "5 Python Q's",
+    "5 SQL Q's",
+    "Communication practice",
+    "Skin Care",
+    "Sleep at 11:30",
+]
+
 
 def get_database_path():
     return os.environ.get("PRODUCTIVITYGUARD_DB", str(BASE_DIR / DB_NAME))
@@ -104,6 +115,14 @@ def _seed_defaults(cursor):
             cursor.execute(
                 "INSERT INTO site_rules (domain, category) VALUES (?, 'timepass')",
                 (domain,),
+            )
+
+    cursor.execute("SELECT COUNT(*) AS total FROM task_templates")
+    if cursor.fetchone()["total"] == 0:
+        for index, title in enumerate(DEFAULT_TASKS, start=1):
+            cursor.execute(
+                "INSERT INTO task_templates (title, sort_order, active) VALUES (?, ?, 1)",
+                (title, index),
             )
 
 

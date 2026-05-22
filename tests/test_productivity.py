@@ -7,10 +7,15 @@ from database.db import execute_query
 from services.productivity import (
     change_balance,
     classify_domain,
+    get_task_summary,
+    get_today_tasks,
     get_balance_seconds,
     get_state,
+    get_weekly_analytics,
     handle_heartbeat,
+    parse_timestamp,
     set_setting,
+    update_today_task,
 )
 
 
@@ -53,7 +58,7 @@ class ProductivityRulesTest(unittest.TestCase):
         self.heartbeat("https://github.com", "2026-05-13T10:06:00")
 
         self.assertEqual(round(get_balance_seconds()), 60)
-        self.assertEqual(get_state()["today"]["productive_minutes"], 6.0)
+        self.assertEqual(get_state(parse_timestamp("2026-05-13T10:06:00"))["today"]["productive_minutes"], 6.0)
 
     def test_timepass_consumes_balance_and_blocks_at_zero(self):
         change_balance(60)
@@ -86,6 +91,52 @@ class ProductivityRulesTest(unittest.TestCase):
         change_balance(200 * 60)
 
         self.assertEqual(round(get_balance_seconds()), 120 * 60)
+
+    def test_weekly_analytics_returns_seven_days_with_zero_buckets(self):
+        set_setting("idle_timeout_seconds", 4000)
+        self.heartbeat("https://github.com", "2026-05-13T10:00:00")
+        self.heartbeat("https://github.com", "2026-05-13T11:00:00")
+
+        analytics = get_weekly_analytics(parse_timestamp("2026-05-15T09:00:00"))
+
+        self.assertEqual(len(analytics["days"]), 7)
+        self.assertEqual(analytics["days"][0]["date"], "2026-05-09")
+        self.assertEqual(analytics["days"][-1]["date"], "2026-05-15")
+        may_13 = [day for day in analytics["days"] if day["date"] == "2026-05-13"][0]
+        self.assertEqual(may_13["productive_hours"], 1.0)
+        self.assertEqual(analytics["totals"]["productive_hours"], 1.0)
+
+    def test_default_tasks_seed_once(self):
+        initialize_database()
+        tasks = get_today_tasks(parse_timestamp("2026-05-13T10:00:00"))["tasks"]
+
+        self.assertEqual(len(tasks), 8)
+        self.assertEqual(tasks[0]["title"], "Sleep for 7 hrs")
+
+    def test_task_completion_is_scoped_to_today(self):
+        today = parse_timestamp("2026-05-13T10:00:00")
+        tomorrow = parse_timestamp("2026-05-14T10:00:00")
+        task_id = get_today_tasks(today)["tasks"][0]["id"]
+
+        update_today_task({"task_id": task_id, "completed": True}, today)
+
+        self.assertEqual(get_today_tasks(today)["completed_count"], 1)
+        self.assertEqual(get_today_tasks(tomorrow)["completed_count"], 0)
+
+    def test_task_summary_reports_best_day_and_weekly_percent(self):
+        day_one = parse_timestamp("2026-05-13T10:00:00")
+        day_two = parse_timestamp("2026-05-14T10:00:00")
+        tasks = get_today_tasks(day_one)["tasks"]
+
+        update_today_task({"task_id": tasks[0]["id"], "completed": True}, day_one)
+        update_today_task({"task_id": tasks[1]["id"], "completed": True}, day_two)
+        update_today_task({"task_id": tasks[2]["id"], "completed": True}, day_two)
+
+        summary = get_task_summary(day_two)
+
+        self.assertEqual(summary["best_day"]["date"], "2026-05-14")
+        self.assertEqual(summary["today"]["completed_count"], 2)
+        self.assertEqual(summary["weekly_completion_percent"], 5.4)
 
 
 if __name__ == "__main__":

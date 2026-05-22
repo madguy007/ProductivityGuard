@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from urllib.parse import urlparse
 
 from database.db import execute_query, fetch_all, fetch_one, initialize_database
@@ -14,13 +14,17 @@ LAST_HEARTBEAT_KEYS = (
 )
 
 
+def local_now():
+    return datetime.now().replace(microsecond=0)
+
+
 def utc_now():
-    return datetime.utcnow().replace(microsecond=0)
+    return local_now()
 
 
 def parse_timestamp(value):
     if not value:
-        return utc_now()
+        return local_now()
     normalized = str(value).replace("Z", "+00:00")
     parsed = datetime.fromisoformat(normalized)
     if parsed.tzinfo is not None:
@@ -198,7 +202,7 @@ def record_session(previous, ended_at, duration_seconds):
 
 
 def today_totals(now=None):
-    now = now or utc_now()
+    now = now or local_now()
     today_prefix = now.date().isoformat()
     rows = fetch_all(
         "SELECT category, COALESCE(SUM(duration_seconds), 0) AS seconds "
@@ -212,7 +216,7 @@ def today_totals(now=None):
 
 
 def maybe_apply_daily_bonus(now=None):
-    now = now or utc_now()
+    now = now or local_now()
     today = now.date().isoformat()
     already_applied = fetch_one("SELECT bonus_date FROM daily_bonus WHERE bonus_date = ?", (today,))
     if already_applied:
@@ -293,7 +297,7 @@ def handle_heartbeat(payload):
 
 def get_state(now=None):
     initialize_database()
-    now = now or utc_now()
+    now = now or local_now()
     totals = today_totals(now)
     balance_seconds = get_balance_seconds()
     last = get_previous_heartbeat()
@@ -310,4 +314,148 @@ def get_state(now=None):
         "active_category": last_category,
         "rules": list_rules(),
         "settings": get_settings(),
+    }
+
+
+def week_dates(now=None):
+    now = now or local_now()
+    start = now.date() - timedelta(days=6)
+    return [(start + timedelta(days=offset)).isoformat() for offset in range(7)]
+
+
+def get_weekly_analytics(now=None):
+    initialize_database()
+    dates = week_dates(now)
+    rows = fetch_all(
+        "SELECT DATE(started_at) AS activity_date, category, "
+        "COALESCE(SUM(duration_seconds), 0) AS seconds "
+        "FROM activity_sessions "
+        "WHERE DATE(started_at) BETWEEN ? AND ? "
+        "GROUP BY DATE(started_at), category",
+        (dates[0], dates[-1]),
+    )
+
+    buckets = {
+        date: {
+            "date": date,
+            "productive_hours": 0.0,
+            "timepass_hours": 0.0,
+            "neutral_hours": 0.0,
+        }
+        for date in dates
+    }
+    totals = {"productive_hours": 0.0, "timepass_hours": 0.0, "neutral_hours": 0.0}
+
+    for row in rows:
+        key = f"{row['category']}_hours"
+        hours = round(float(row["seconds"]) / 3600, 2)
+        if row["activity_date"] in buckets and key in buckets[row["activity_date"]]:
+            buckets[row["activity_date"]][key] = hours
+
+    for bucket in buckets.values():
+        for key in totals:
+            totals[key] += bucket[key]
+
+    return {
+        "days": list(buckets.values()),
+        "totals": {key: round(value, 2) for key, value in totals.items()},
+    }
+
+
+def get_task_templates():
+    return fetch_all(
+        "SELECT id, title, sort_order FROM task_templates "
+        "WHERE active = 1 ORDER BY sort_order, id"
+    )
+
+
+def get_today_tasks(now=None):
+    initialize_database()
+    now = now or local_now()
+    task_date = now.date().isoformat()
+    tasks = []
+
+    for task in get_task_templates():
+        completion = fetch_one(
+            "SELECT completed FROM task_completions WHERE task_date = ? AND task_id = ?",
+            (task_date, task["id"]),
+        )
+        tasks.append(
+            {
+                "id": task["id"],
+                "title": task["title"],
+                "completed": bool(completion and completion["completed"]),
+            }
+        )
+
+    completed_count = sum(1 for task in tasks if task["completed"])
+    total_count = len(tasks)
+    return {
+        "date": task_date,
+        "tasks": tasks,
+        "completed_count": completed_count,
+        "total_count": total_count,
+        "completion_percent": round((completed_count / total_count) * 100, 1) if total_count else 0,
+    }
+
+
+def update_today_task(payload, now=None):
+    initialize_database()
+    now = now or local_now()
+    task_date = now.date().isoformat()
+    task_id = int(payload.get("task_id", 0))
+    completed = 1 if payload.get("completed") else 0
+
+    task = fetch_one("SELECT id FROM task_templates WHERE id = ? AND active = 1", (task_id,))
+    if not task:
+        raise ValueError("Unknown task.")
+
+    execute_query(
+        "INSERT INTO task_completions (task_date, task_id, completed, updated_at) "
+        "VALUES (?, ?, ?, ?) "
+        "ON CONFLICT(task_date, task_id) DO UPDATE SET "
+        "completed = excluded.completed, updated_at = excluded.updated_at",
+        (task_date, task_id, completed, iso(now)),
+    )
+    return get_today_tasks(now)
+
+
+def get_task_summary(now=None):
+    initialize_database()
+    dates = week_dates(now)
+    templates = get_task_templates()
+    total_tasks = len(templates)
+    rows = fetch_all(
+        "SELECT task_date, COALESCE(SUM(completed), 0) AS completed_count "
+        "FROM task_completions WHERE task_date BETWEEN ? AND ? GROUP BY task_date",
+        (dates[0], dates[-1]),
+    )
+    completed_by_date = {row["task_date"]: int(row["completed_count"]) for row in rows}
+
+    days = []
+    for date in dates:
+        completed_count = completed_by_date.get(date, 0)
+        days.append(
+            {
+                "date": date,
+                "completed_count": completed_count,
+                "total_count": total_tasks,
+                "completion_percent": round((completed_count / total_tasks) * 100, 1)
+                if total_tasks
+                else 0,
+            }
+        )
+
+    best_day = max(days, key=lambda day: (day["completion_percent"], day["completed_count"]))
+    today = days[-1]
+    weekly_completed = sum(day["completed_count"] for day in days)
+    weekly_total = total_tasks * len(days)
+
+    return {
+        "days": days,
+        "today": today,
+        "best_day": best_day,
+        "weekly_completion_percent": round((weekly_completed / weekly_total) * 100, 1)
+        if weekly_total
+        else 0,
     }

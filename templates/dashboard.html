@@ -34,6 +34,56 @@
         </article>
       </section>
 
+      <section class="analytics-grid">
+        <div class="panel chart-panel">
+          <div class="panel-head">
+            <h2>Weekly Study Hours</h2>
+            <p>Last 7 days of productive browser time.</p>
+          </div>
+          <svg id="weekly-chart" class="line-chart" role="img" aria-label="Weekly productive hours chart"></svg>
+          <div class="chart-labels" id="weekly-chart-labels"></div>
+          <div class="summary-row">
+            <article>
+              <span id="weekly-productive">0.0</span>
+              <small>productive hrs</small>
+            </article>
+            <article>
+              <span id="weekly-timepass">0.0</span>
+              <small>timepass hrs</small>
+            </article>
+            <article>
+              <span id="weekly-neutral">0.0</span>
+              <small>neutral hrs</small>
+            </article>
+          </div>
+        </div>
+
+        <div class="panel todo-panel">
+          <div class="panel-head">
+            <h2>Daily Todo</h2>
+            <p><span id="task-progress">0 / 8</span> completed today</p>
+          </div>
+          <div class="completion-meter" aria-label="Task completion">
+            <div id="completion-fill"></div>
+          </div>
+          <ul id="task-list" class="task-list"></ul>
+          <div class="summary-row task-summary">
+            <article>
+              <span id="task-percent">0%</span>
+              <small>today</small>
+            </article>
+            <article>
+              <span id="best-day">-</span>
+              <small>best day</small>
+            </article>
+            <article>
+              <span id="weekly-task-percent">0%</span>
+              <small>weekly avg</small>
+            </article>
+          </div>
+        </div>
+      </section>
+
       <section class="grid">
         <div class="panel">
           <div class="panel-head">

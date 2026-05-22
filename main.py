@@ -4,11 +4,15 @@ from database.db import initialize_database
 from services.productivity import (
     add_rule,
     delete_rule,
+    get_task_summary,
+    get_today_tasks,
     get_settings,
     get_state,
+    get_weekly_analytics,
     handle_heartbeat,
     list_rules,
     replace_rules,
+    update_today_task,
     update_settings,
 )
 
@@ -39,6 +43,25 @@ def heartbeat():
 @app.route("/api/state")
 def state():
     return jsonify(get_state())
+
+
+@app.route("/api/analytics/weekly")
+def weekly_analytics():
+    return jsonify(get_weekly_analytics())
+
+
+@app.route("/api/tasks/today", methods=["GET", "POST", "OPTIONS"])
+def today_tasks():
+    if request.method == "OPTIONS":
+        return "", 204
+    if request.method == "GET":
+        return jsonify(get_today_tasks())
+    return jsonify(update_today_task(request.get_json(silent=True) or {}))
+
+
+@app.route("/api/tasks/summary")
+def task_summary():
+    return jsonify(get_task_summary())
 
 
 @app.route("/api/rules", methods=["GET", "POST", "DELETE", "OPTIONS"])

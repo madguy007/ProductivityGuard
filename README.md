@@ -31,6 +31,13 @@ http://127.0.0.1:5000
 Keep `python main.py` running while you browse. The extension sends active-tab heartbeats to the local app.
 
 
+## Dashboard Features
+
+- Weekly study hours line chart for the last 7 days.
+- Weekly productive, timepass, and neutral hour totals.
+- Daily checklist for 8 recurring habits.
+- Task completion summary for today and the last 7 days.
+
 
 ## Reward Rules
 
