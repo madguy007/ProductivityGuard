@@ -11,6 +11,7 @@ from services.productivity import (
     get_today_tasks,
     get_balance_seconds,
     get_state,
+    get_monthly_analytics,
     get_weekly_analytics,
     handle_heartbeat,
     parse_timestamp,
@@ -105,6 +106,20 @@ class ProductivityRulesTest(unittest.TestCase):
         may_13 = [day for day in analytics["days"] if day["date"] == "2026-05-13"][0]
         self.assertEqual(may_13["productive_hours"], 1.0)
         self.assertEqual(analytics["totals"]["productive_hours"], 1.0)
+
+    def test_monthly_analytics_returns_thirty_days(self):
+        set_setting("idle_timeout_seconds", 8000)
+        self.heartbeat("https://github.com", "2026-05-01T10:00:00")
+        self.heartbeat("https://github.com", "2026-05-01T12:00:00")
+
+        analytics = get_monthly_analytics(parse_timestamp("2026-05-30T09:00:00"))
+
+        self.assertEqual(len(analytics["days"]), 30)
+        self.assertEqual(analytics["days"][0]["date"], "2026-05-01")
+        self.assertEqual(analytics["days"][-1]["date"], "2026-05-30")
+        may_1 = [day for day in analytics["days"] if day["date"] == "2026-05-01"][0]
+        self.assertEqual(may_1["productive_hours"], 2.0)
+        self.assertEqual(analytics["totals"]["productive_hours"], 2.0)
 
     def test_default_tasks_seed_once(self):
         initialize_database()

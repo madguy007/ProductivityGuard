@@ -2,8 +2,10 @@ const stateUrl = "/api/state";
 const rulesUrl = "/api/rules";
 const settingsUrl = "/api/settings";
 const weeklyAnalyticsUrl = "/api/analytics/weekly";
+const monthlyAnalyticsUrl = "/api/analytics/monthly";
 const todayTasksUrl = "/api/tasks/today";
 const taskSummaryUrl = "/api/tasks/summary";
+let analyticsRange = "weekly";
 
 function format(value) {
   return Number(value || 0).toFixed(1);
@@ -58,6 +60,11 @@ function shortDateLabel(dateText) {
   return date.toLocaleDateString(undefined, { weekday: "short" });
 }
 
+function compactDateLabel(dateText) {
+  const date = new Date(`${dateText}T00:00:00`);
+  return date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+}
+
 function renderWeeklyChart(days) {
   const svg = document.getElementById("weekly-chart");
   const labels = document.getElementById("weekly-chart-labels");
@@ -94,10 +101,25 @@ function renderWeeklyChart(days) {
     <polyline class="chart-line" points="${pointString}"></polyline>
     <g class="chart-points">${circles}</g>
   `;
-  labels.innerHTML = days.map((day) => `<span>${shortDateLabel(day.date)}</span>`).join("");
+  const labelEvery = days.length > 10 ? 5 : 1;
+  labels.style.gridTemplateColumns = `repeat(${days.length}, 1fr)`;
+  labels.innerHTML = days
+    .map((day, index) => {
+      const showLabel = index === 0 || index === days.length - 1 || index % labelEvery === 0;
+      const label = days.length > 10 ? compactDateLabel(day.date) : shortDateLabel(day.date);
+      return `<span>${showLabel ? label : ""}</span>`;
+    })
+    .join("");
 }
 
 function renderWeeklyAnalytics(analytics) {
+  const isMonthly = analyticsRange === "monthly";
+  document.getElementById("analytics-title").textContent = isMonthly
+    ? "Monthly Study Hours"
+    : "Weekly Study Hours";
+  document.getElementById("analytics-subtitle").textContent = isMonthly
+    ? "Last 30 days of productive browser time."
+    : "Last 7 days of productive browser time.";
   renderWeeklyChart(analytics.days);
   document.getElementById("weekly-productive").textContent = format(analytics.totals.productive_hours);
   document.getElementById("weekly-timepass").textContent = format(analytics.totals.timepass_hours);
@@ -147,9 +169,10 @@ async function refreshTasks() {
 }
 
 async function refresh() {
+  const analyticsUrl = analyticsRange === "monthly" ? monthlyAnalyticsUrl : weeklyAnalyticsUrl;
   const [state, analytics, tasks, summary] = await Promise.all([
     requestJson(stateUrl),
-    requestJson(weeklyAnalyticsUrl),
+    requestJson(analyticsUrl),
     requestJson(todayTasksUrl),
     requestJson(taskSummaryUrl),
   ]);
@@ -199,6 +222,16 @@ document.getElementById("settings-form").addEventListener("submit", async (event
     body: JSON.stringify(payload),
   });
   await refresh();
+});
+
+document.querySelectorAll(".range-toggle button").forEach((button) => {
+  button.addEventListener("click", async () => {
+    analyticsRange = button.dataset.range;
+    document.querySelectorAll(".range-toggle button").forEach((item) => {
+      item.classList.toggle("active", item.dataset.range === analyticsRange);
+    });
+    await refresh();
+  });
 });
 
 refresh();

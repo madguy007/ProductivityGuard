@@ -8,6 +8,7 @@ from services.productivity import (
     get_today_tasks,
     get_settings,
     get_state,
+    get_monthly_analytics,
     get_weekly_analytics,
     handle_heartbeat,
     list_rules,
@@ -48,6 +49,11 @@ def state():
 @app.route("/api/analytics/weekly")
 def weekly_analytics():
     return jsonify(get_weekly_analytics())
+
+
+@app.route("/api/analytics/monthly")
+def monthly_analytics():
+    return jsonify(get_monthly_analytics())
 
 
 @app.route("/api/tasks/today", methods=["GET", "POST", "OPTIONS"])

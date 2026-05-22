@@ -33,7 +33,7 @@ Keep `python main.py` running while you browse. The extension sends active-tab h
 
 ## Dashboard Features
 
-- Weekly study hours line chart for the last 7 days.
+- Weekly and monthly study hours line chart.
 - Weekly productive, timepass, and neutral hour totals.
 - Daily checklist for 8 recurring habits.
 - Task completion summary for today and the last 7 days.

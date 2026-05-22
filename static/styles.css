@@ -128,6 +128,36 @@ small {
   color: var(--muted);
 }
 
+.panel-title-row {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.range-toggle {
+  display: inline-grid;
+  grid-template-columns: repeat(2, auto);
+  gap: 4px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 4px;
+  background: #f8fafc;
+}
+
+.range-toggle button {
+  min-height: 32px;
+  border-radius: 6px;
+  padding: 0 10px;
+  background: transparent;
+  color: var(--muted);
+}
+
+.range-toggle button.active {
+  background: var(--text);
+  color: #fff;
+}
+
 .line-chart {
   width: 100%;
   height: 220px;
@@ -333,5 +363,9 @@ button:hover {
 
   .balance {
     text-align: left;
+  }
+
+  .panel-title-row {
+    display: grid;
   }
 }

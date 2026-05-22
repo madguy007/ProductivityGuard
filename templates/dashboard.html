@@ -37,8 +37,16 @@
       <section class="analytics-grid">
         <div class="panel chart-panel">
           <div class="panel-head">
-            <h2>Weekly Study Hours</h2>
-            <p>Last 7 days of productive browser time.</p>
+            <div class="panel-title-row">
+              <div>
+                <h2 id="analytics-title">Weekly Study Hours</h2>
+                <p id="analytics-subtitle">Last 7 days of productive browser time.</p>
+              </div>
+              <div class="range-toggle" aria-label="Analytics range">
+                <button type="button" class="active" data-range="weekly">Week</button>
+                <button type="button" data-range="monthly">Month</button>
+              </div>
+            </div>
           </div>
           <svg id="weekly-chart" class="line-chart" role="img" aria-label="Weekly productive hours chart"></svg>
           <div class="chart-labels" id="weekly-chart-labels"></div>

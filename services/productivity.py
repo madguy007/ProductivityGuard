@@ -317,15 +317,19 @@ def get_state(now=None):
     }
 
 
-def week_dates(now=None):
+def date_range(days, now=None):
     now = now or local_now()
-    start = now.date() - timedelta(days=6)
-    return [(start + timedelta(days=offset)).isoformat() for offset in range(7)]
+    start = now.date() - timedelta(days=days - 1)
+    return [(start + timedelta(days=offset)).isoformat() for offset in range(days)]
 
 
-def get_weekly_analytics(now=None):
+def week_dates(now=None):
+    return date_range(7, now)
+
+
+def get_range_analytics(days, now=None):
     initialize_database()
-    dates = week_dates(now)
+    dates = date_range(days, now)
     rows = fetch_all(
         "SELECT DATE(started_at) AS activity_date, category, "
         "COALESCE(SUM(duration_seconds), 0) AS seconds "
@@ -360,6 +364,14 @@ def get_weekly_analytics(now=None):
         "days": list(buckets.values()),
         "totals": {key: round(value, 2) for key, value in totals.items()},
     }
+
+
+def get_weekly_analytics(now=None):
+    return get_range_analytics(7, now)
+
+
+def get_monthly_analytics(now=None):
+    return get_range_analytics(30, now)
 
 
 def get_task_templates():
