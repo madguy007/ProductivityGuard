@@ -42,6 +42,13 @@ CREATE TABLE IF NOT EXISTS daily_bonus (
 );
 
 
+CREATE TABLE IF NOT EXISTS daily_balance_resets (
+    reset_date TEXT PRIMARY KEY,
+    applied_at TEXT NOT NULL,
+    starting_balance_seconds REAL NOT NULL
+);
+
+
 CREATE TABLE IF NOT EXISTS app_settings (
     key TEXT PRIMARY KEY,
     value TEXT NOT NULL

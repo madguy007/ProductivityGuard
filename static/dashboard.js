@@ -50,9 +50,21 @@ function renderSettings(settings) {
   Object.entries(settings).forEach(([key, value]) => {
     const input = form.elements[key];
     if (input) {
-      input.value = value;
+      if (input.type === "checkbox") {
+        input.checked = Boolean(Number(value));
+      } else {
+        input.value = value;
+      }
     }
   });
+}
+
+function renderStrictStatus(settings) {
+  const enabled = Boolean(Number(settings.strict_earned_access_enabled));
+  const startMinutes = Number(settings.strict_daily_start_balance_minutes || 0);
+  document.getElementById("strict-status").textContent = enabled
+    ? `Strict mode: today starts at ${startMinutes} min.`
+    : "Strict mode is off: unused balance can carry over.";
 }
 
 function shortDateLabel(dateText) {
@@ -190,6 +202,7 @@ async function refresh() {
   renderRules("productive", state.rules.productive);
   renderRules("timepass", state.rules.timepass);
   renderSettings(state.settings);
+  renderStrictStatus(state.settings);
   renderWeeklyAnalytics(analytics);
   renderTasks(tasks);
   renderTaskSummary(summary);
@@ -214,9 +227,11 @@ document.querySelectorAll(".rule-form").forEach((form) => {
 document.getElementById("settings-form").addEventListener("submit", async (event) => {
   event.preventDefault();
   const payload = {};
-  new FormData(event.currentTarget).forEach((value, key) => {
+  const form = event.currentTarget;
+  new FormData(form).forEach((value, key) => {
     payload[key] = Number(value);
   });
+  payload.strict_earned_access_enabled = form.elements.strict_earned_access_enabled.checked ? 1 : 0;
   await requestJson(settingsUrl, {
     method: "POST",
     body: JSON.stringify(payload),

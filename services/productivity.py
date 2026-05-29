@@ -69,6 +69,11 @@ def get_int_setting(key, default):
         return int(default)
 
 
+def get_bool_setting(key, default=False):
+    value = str(get_setting(key, "1" if default else "0")).strip().lower()
+    return value in {"1", "true", "yes", "on"}
+
+
 def get_settings():
     rows = fetch_all("SELECT key, value FROM app_settings ORDER BY key")
     settings = {row["key"]: row["value"] for row in rows}
@@ -80,6 +85,8 @@ def get_settings():
         "idle_timeout_seconds": get_int_setting("idle_timeout_seconds", 300),
         "carryover_cap_minutes": get_int_setting("carryover_cap_minutes", 120),
         "heartbeat_interval_seconds": get_int_setting("heartbeat_interval_seconds", 15),
+        "strict_earned_access_enabled": 1 if get_bool_setting("strict_earned_access_enabled", True) else 0,
+        "strict_daily_start_balance_minutes": get_int_setting("strict_daily_start_balance_minutes", 0),
     }
 
 
@@ -91,10 +98,17 @@ def update_settings(payload):
         "idle_timeout_seconds",
         "carryover_cap_minutes",
         "heartbeat_interval_seconds",
+        "strict_earned_access_enabled",
+        "strict_daily_start_balance_minutes",
     }
     for key, value in payload.items():
         if key in allowed:
-            set_setting(key, max(1, int(value)))
+            if key == "strict_earned_access_enabled":
+                set_setting(key, 1 if value else 0)
+            elif key == "strict_daily_start_balance_minutes":
+                set_setting(key, max(0, int(value)))
+            else:
+                set_setting(key, max(1, int(value)))
     cap_balance()
     return get_settings()
 
@@ -119,6 +133,29 @@ def cap_balance():
 
 def change_balance(delta_seconds):
     return set_balance_seconds(get_balance_seconds() + float(delta_seconds))
+
+
+def apply_daily_strict_reset(now=None):
+    now = now or local_now()
+    if not get_bool_setting("strict_earned_access_enabled", True):
+        return False
+
+    reset_date = now.date().isoformat()
+    already_applied = fetch_one(
+        "SELECT reset_date FROM daily_balance_resets WHERE reset_date = ?",
+        (reset_date,),
+    )
+    if already_applied:
+        return False
+
+    starting_seconds = get_int_setting("strict_daily_start_balance_minutes", 0) * 60
+    execute_query(
+        "INSERT INTO daily_balance_resets (reset_date, applied_at, starting_balance_seconds) "
+        "VALUES (?, ?, ?)",
+        (reset_date, iso(now), starting_seconds),
+    )
+    set_balance_seconds(starting_seconds)
+    return True
 
 
 def list_rules():
@@ -265,6 +302,7 @@ def handle_heartbeat(payload):
     initialize_database()
 
     observed_at = parse_timestamp(payload.get("timestamp"))
+    apply_daily_strict_reset(observed_at)
     url = payload.get("url") or ""
     domain = normalize_domain(payload.get("domain") or url)
     title = payload.get("title") or ""
@@ -298,6 +336,7 @@ def handle_heartbeat(payload):
 def get_state(now=None):
     initialize_database()
     now = now or local_now()
+    apply_daily_strict_reset(now)
     totals = today_totals(now)
     balance_seconds = get_balance_seconds()
     last = get_previous_heartbeat()

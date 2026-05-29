@@ -16,6 +16,7 @@
         <div class="balance">
           <span id="balance">0.0</span>
           <small>timepass min</small>
+          <p id="strict-status">Strict mode: today starts at 0 min.</p>
         </div>
       </header>
 
@@ -137,6 +138,14 @@
           <label>
             <span>Carryover cap minutes</span>
             <input type="number" min="1" name="carryover_cap_minutes">
+          </label>
+          <label class="check-setting">
+            <span>Strict earned access</span>
+            <input type="checkbox" name="strict_earned_access_enabled">
+          </label>
+          <label>
+            <span>Daily start balance minutes</span>
+            <input type="number" min="0" name="strict_daily_start_balance_minutes">
           </label>
           <button type="submit">Save settings</button>
         </form>

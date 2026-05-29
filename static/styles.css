@@ -77,6 +77,12 @@ small {
   font-weight: 700;
 }
 
+.balance p {
+  margin-top: 8px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
 .metrics {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -332,7 +338,7 @@ button:hover {
 
 .settings {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr)) auto;
+  grid-template-columns: repeat(6, minmax(0, 1fr)) auto;
   align-items: end;
   gap: 12px;
 }
@@ -345,6 +351,11 @@ button:hover {
 .settings span {
   color: var(--muted);
   font-size: 13px;
+}
+
+.check-setting input {
+  width: 20px;
+  height: 20px;
 }
 
 @media (max-width: 780px) {

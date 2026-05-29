@@ -61,7 +61,9 @@ Keep `python main.py` running while you browse. The extension sends active-tab h
 
 ## Reward Rules
 
+- Strict Earned Access is enabled by default.
+- Each day starts with 0 timepass minutes.
 - 6 productive minutes earn 1 timepass minute.
 - 4 productive hours in a day grants a one-time 20 minute bonus.
-- Unused timepass minutes carry over, capped at 120 minutes.
+- Unused timepass minutes carry over only when Strict Earned Access is disabled.
 - Tracking pauses after 5 minutes of browser inactivity.

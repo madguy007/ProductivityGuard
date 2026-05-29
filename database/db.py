@@ -36,6 +36,8 @@ DEFAULT_SETTINGS = {
     "idle_timeout_seconds": "300",
     "carryover_cap_minutes": "120",
     "heartbeat_interval_seconds": "15",
+    "strict_earned_access_enabled": "1",
+    "strict_daily_start_balance_minutes": "0",
 }
 
 DEFAULT_TASKS = [

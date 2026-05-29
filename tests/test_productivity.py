@@ -7,6 +7,7 @@ from database.db import execute_query
 from services.productivity import (
     change_balance,
     classify_domain,
+    get_settings,
     get_task_summary,
     get_today_tasks,
     get_balance_seconds,
@@ -16,6 +17,7 @@ from services.productivity import (
     handle_heartbeat,
     parse_timestamp,
     set_setting,
+    update_settings,
     update_today_task,
 )
 
@@ -92,6 +94,46 @@ class ProductivityRulesTest(unittest.TestCase):
         change_balance(200 * 60)
 
         self.assertEqual(round(get_balance_seconds()), 120 * 60)
+
+    def test_strict_mode_resets_balance_on_new_day(self):
+        change_balance(30 * 60)
+
+        state = get_state(parse_timestamp("2026-05-13T08:00:00"))
+
+        self.assertEqual(round(state["balance_seconds"]), 0)
+        self.assertEqual(round(get_balance_seconds()), 0)
+
+    def test_productive_time_after_strict_reset_earns_balance(self):
+        change_balance(30 * 60)
+
+        self.heartbeat("https://github.com", "2026-05-13T10:00:00")
+        self.heartbeat("https://github.com", "2026-05-13T10:03:00")
+        self.heartbeat("https://github.com", "2026-05-13T10:06:00")
+
+        self.assertEqual(round(get_balance_seconds()), 60)
+
+    def test_timepass_is_blocked_before_earning_in_strict_mode(self):
+        result = self.heartbeat("https://youtube.com", "2026-05-13T10:00:00")
+
+        self.assertTrue(result["blocked"])
+        self.assertEqual(round(result["balance_seconds"]), 0)
+
+    def test_strict_reset_runs_once_per_day(self):
+        get_state(parse_timestamp("2026-05-13T08:00:00"))
+        change_balance(15 * 60)
+
+        get_state(parse_timestamp("2026-05-13T12:00:00"))
+
+        self.assertEqual(round(get_balance_seconds()), 15 * 60)
+
+    def test_disabling_strict_mode_keeps_carryover_balance(self):
+        update_settings({"strict_earned_access_enabled": 0})
+        change_balance(25 * 60)
+
+        state = get_state(parse_timestamp("2026-05-13T08:00:00"))
+
+        self.assertEqual(round(state["balance_seconds"]), 25 * 60)
+        self.assertEqual(get_settings()["strict_earned_access_enabled"], 0)
 
     def test_weekly_analytics_returns_seven_days_with_zero_buckets(self):
         set_setting("idle_timeout_seconds", 4000)
