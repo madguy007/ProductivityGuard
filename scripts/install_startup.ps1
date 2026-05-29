@@ -4,22 +4,35 @@ $TaskName = "ProductivityGuard"
 $ProjectRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
 $Launcher = Join-Path $ProjectRoot "launch_productivityguard.py"
 $StartupShortcut = Join-Path ([Environment]::GetFolderPath("Startup")) "$TaskName.lnk"
-$VenvPythonw = Join-Path $ProjectRoot "venv\Scripts\pythonw.exe"
 $VenvPython = Join-Path $ProjectRoot "venv\Scripts\python.exe"
 
-if (Test-Path $VenvPythonw) {
-    $Python = $VenvPythonw
-} elseif (Test-Path $VenvPython) {
+function Test-PythonForApp {
+    param([string]$PythonPath)
+
+    if (-not $PythonPath) {
+        return $false
+    }
+
+    try {
+        & $PythonPath -c "import flask" *> $null
+        return $LASTEXITCODE -eq 0
+    } catch {
+        return $false
+    }
+}
+
+$Python = $null
+if ((Test-Path $VenvPython) -and (Test-PythonForApp $VenvPython)) {
     $Python = $VenvPython
 } else {
-    $PythonCommand = Get-Command pythonw.exe -ErrorAction SilentlyContinue
-    if (-not $PythonCommand) {
-        $PythonCommand = Get-Command python.exe -ErrorAction SilentlyContinue
+    $PythonCommand = Get-Command python.exe -ErrorAction SilentlyContinue
+    if ($PythonCommand -and (Test-PythonForApp $PythonCommand.Source)) {
+        $Python = $PythonCommand.Source
     }
-    if (-not $PythonCommand) {
-        throw "Python was not found. Create/activate the project venv first, then run this script again."
-    }
-    $Python = $PythonCommand.Source
+}
+
+if (-not $Python) {
+    throw "No working Python with Flask was found. Run: pip install -r requirements.txt"
 }
 
 if (-not (Test-Path $Launcher)) {

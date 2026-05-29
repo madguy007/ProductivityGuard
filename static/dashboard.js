@@ -6,6 +6,7 @@ const monthlyAnalyticsUrl = "/api/analytics/monthly";
 const todayTasksUrl = "/api/tasks/today";
 const taskSummaryUrl = "/api/tasks/summary";
 let analyticsRange = "weekly";
+const svgNamespace = "http://www.w3.org/2000/svg";
 
 function format(value) {
   return Number(value || 0).toFixed(1);
@@ -94,34 +95,49 @@ function renderWeeklyChart(days) {
   });
 
   const pointString = points.map((point) => `${point.x},${point.y}`).join(" ");
-  const circles = points
-    .map(
-      (point) =>
-        `<circle cx="${point.x}" cy="${point.y}" r="4"><title>${point.value.toFixed(2)} hours</title></circle>`
-    )
-    .join("");
-  const gridLines = [0, 0.5, 1]
-    .map((ratio) => {
-      const y = height - padding - ratio * (height - padding * 2);
-      return `<line class="chart-grid" x1="${padding}" y1="${y}" x2="${width - padding}" y2="${y}"></line>`;
-    })
-    .join("");
-
   svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
-  svg.innerHTML = `
-    ${gridLines}
-    <polyline class="chart-line" points="${pointString}"></polyline>
-    <g class="chart-points">${circles}</g>
-  `;
+  svg.replaceChildren();
+
+  [0, 0.5, 1].forEach((ratio) => {
+    const y = height - padding - ratio * (height - padding * 2);
+    const line = document.createElementNS(svgNamespace, "line");
+    line.setAttribute("class", "chart-grid");
+    line.setAttribute("x1", padding);
+    line.setAttribute("y1", y);
+    line.setAttribute("x2", width - padding);
+    line.setAttribute("y2", y);
+    svg.appendChild(line);
+  });
+
+  const polyline = document.createElementNS(svgNamespace, "polyline");
+  polyline.setAttribute("class", "chart-line");
+  polyline.setAttribute("points", pointString);
+  svg.appendChild(polyline);
+
+  const pointGroup = document.createElementNS(svgNamespace, "g");
+  pointGroup.setAttribute("class", "chart-points");
+  points.forEach((point) => {
+    const circle = document.createElementNS(svgNamespace, "circle");
+    const title = document.createElementNS(svgNamespace, "title");
+    circle.setAttribute("cx", point.x);
+    circle.setAttribute("cy", point.y);
+    circle.setAttribute("r", 4);
+    title.textContent = `${point.value.toFixed(2)} hours`;
+    circle.appendChild(title);
+    pointGroup.appendChild(circle);
+  });
+  svg.appendChild(pointGroup);
+
   const labelEvery = days.length > 10 ? 5 : 1;
   labels.style.gridTemplateColumns = `repeat(${days.length}, 1fr)`;
-  labels.innerHTML = days
-    .map((day, index) => {
-      const showLabel = index === 0 || index === days.length - 1 || index % labelEvery === 0;
-      const label = days.length > 10 ? compactDateLabel(day.date) : shortDateLabel(day.date);
-      return `<span>${showLabel ? label : ""}</span>`;
-    })
-    .join("");
+  labels.replaceChildren();
+  days.forEach((day, index) => {
+    const showLabel = index === 0 || index === days.length - 1 || index % labelEvery === 0;
+    const label = days.length > 10 ? compactDateLabel(day.date) : shortDateLabel(day.date);
+    const span = document.createElement("span");
+    span.textContent = showLabel ? label : "";
+    labels.appendChild(span);
+  });
 }
 
 function renderWeeklyAnalytics(analytics) {
@@ -181,31 +197,36 @@ async function refreshTasks() {
 }
 
 async function refresh() {
-  const analyticsUrl = analyticsRange === "monthly" ? monthlyAnalyticsUrl : weeklyAnalyticsUrl;
-  const [state, analytics, tasks, summary] = await Promise.all([
-    requestJson(stateUrl),
-    requestJson(analyticsUrl),
-    requestJson(todayTasksUrl),
-    requestJson(taskSummaryUrl),
-  ]);
-  document.getElementById("balance").textContent = format(state.balance_minutes);
-  document.getElementById("productive").textContent = format(state.today.productive_minutes);
-  document.getElementById("timepass").textContent = format(state.today.timepass_minutes);
-  document.getElementById("neutral").textContent = format(state.today.neutral_minutes);
+  try {
+    const analyticsUrl = analyticsRange === "monthly" ? monthlyAnalyticsUrl : weeklyAnalyticsUrl;
+    const [state, analytics, tasks, summary] = await Promise.all([
+      requestJson(stateUrl),
+      requestJson(analyticsUrl),
+      requestJson(todayTasksUrl),
+      requestJson(taskSummaryUrl),
+    ]);
+    document.getElementById("balance").textContent = format(state.balance_minutes);
+    document.getElementById("productive").textContent = format(state.today.productive_minutes);
+    document.getElementById("timepass").textContent = format(state.today.timepass_minutes);
+    document.getElementById("neutral").textContent = format(state.today.neutral_minutes);
 
-  const active = state.active;
-  const activeText = active && active.domain
-    ? `${active.domain} is ${state.active_category}`
-    : "Waiting for browser activity";
-  document.getElementById("active-site").textContent = activeText;
+    const active = state.active;
+    const activeText = active && active.domain
+      ? `${active.domain} is ${state.active_category}`
+      : "Waiting for browser activity";
+    document.getElementById("active-site").textContent = activeText;
 
-  renderRules("productive", state.rules.productive);
-  renderRules("timepass", state.rules.timepass);
-  renderSettings(state.settings);
-  renderStrictStatus(state.settings);
-  renderWeeklyAnalytics(analytics);
-  renderTasks(tasks);
-  renderTaskSummary(summary);
+    renderRules("productive", state.rules.productive);
+    renderRules("timepass", state.rules.timepass);
+    renderSettings(state.settings);
+    renderStrictStatus(state.settings);
+    renderWeeklyAnalytics(analytics);
+    renderTasks(tasks);
+    renderTaskSummary(summary);
+  } catch (error) {
+    console.error(error);
+    document.getElementById("active-site").textContent = `Dashboard refresh failed: ${error.message}`;
+  }
 }
 
 document.querySelectorAll(".rule-form").forEach((form) => {

@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from flask import Flask, jsonify, render_template, request
 
 from database.db import initialize_database
@@ -19,6 +21,15 @@ from services.productivity import (
 
 
 app = Flask(__name__)
+BASE_DIR = Path(__file__).resolve().parent
+
+
+def asset_version():
+    assets = [
+        BASE_DIR / "static" / "dashboard.js",
+        BASE_DIR / "static" / "styles.css",
+    ]
+    return int(max(path.stat().st_mtime for path in assets if path.exists()))
 
 
 @app.after_request
@@ -31,7 +42,7 @@ def add_extension_headers(response):
 
 @app.route("/")
 def dashboard():
-    return render_template("dashboard.html")
+    return render_template("dashboard.html", asset_version=asset_version())
 
 
 @app.route("/api/heartbeat", methods=["POST", "OPTIONS"])
