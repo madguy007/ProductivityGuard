@@ -20,6 +20,26 @@ Open the dashboard:
 http://127.0.0.1:5000
 ```
 
+## Run Automatically On Windows
+
+Install the startup task once:
+
+```powershell
+.\scripts\install_startup.ps1
+```
+
+After that, ProductivityGuard starts automatically when you log in to Windows. It runs in the background and the dashboard stays available at:
+
+```text
+http://127.0.0.1:5000
+```
+
+To remove auto-start:
+
+```powershell
+.\scripts\uninstall_startup.ps1
+```
+
 ## Load the Extension
 
 1. Open Chrome or Brave.
